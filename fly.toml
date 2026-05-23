@@ -1,0 +1,12 @@
+app = "movixuzbot"
+primary_region = "ams"
+
+[build]
+  builder = "paketobuildpacks/builder:base"
+
+[processes]
+  worker = "python bot.py"
+
+[[services]]
+  internal_port = 8080
+  protocol = "tcp"
