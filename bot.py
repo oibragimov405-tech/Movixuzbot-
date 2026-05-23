@@ -17,8 +17,8 @@ logger = logging.getLogger(__name__)
 # === SOZLAMALAR ===
 # ============================================================
 import os
-BOT_TOKEN = os.getenv("BOT_TOKEN", "YANGI_TOKEN_BU_YERGA")   # @BotFather dan yangi token oling!
-ADMIN_IDS = [123456789]               # Sizning Telegram ID ingiz (@userinfobot dan bilib oling)
+BOT_TOKEN = os.getenv("8943368470:AAFmRxJFPcYw76f352JX-HvI81Cst0qdUW4")   # @BotFather dan yangi token oling!
+ADMIN_IDS = [8360625353]               # Sizning Telegram ID ingiz (@userinfobot dan bilib oling)
 ADMIN_USERNAME = "smmgarand"
 UZCARD_NUMBER = "5614684704857034"
 UZUM_NUMBER = "9860123456789012"
