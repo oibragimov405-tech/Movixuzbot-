@@ -14,12 +14,13 @@ logger = logging.getLogger(__name__)
 # ============================================================
 # === SOZLAMALAR ===
 # ============================================================
-import os
-BOT_TOKEN = os.getenv("BOT_TOKEN", "YANGI_TOKEN_BU_YERGA")   # @BotFather dan yangi token oling!
-ADMIN_IDS = [123456789]               # Sizning Telegram ID ingiz (@userinfobot dan bilib oling)
-ADMIN_USERNAME = "smmgarand"
-UZCARD_NUMBER = "5614684704857034"
-UZUM_NUMBER = "9860123456789012"
+BOT_TOKEN = os.getenv("BOT_TOKEN")
+WEBHOOK_URL = os.getenv("WEBHOOK_URL")  # https://movixuzbot-1.fly.dev
+PORT = int(os.getenv("PORT", 8080))
+ADMIN_IDS = [int(x) for x in os.getenv("ADMIN_IDS", "123456789").split(",")]
+ADMIN_USERNAME = os.getenv("ADMIN_USERNAME", "smmgarand")
+UZCARD_NUMBER = os.getenv("UZCARD_NUMBER", "5614684704857034")
+UZUM_NUMBER = os.getenv("UZUM_NUMBER", "9860123456789012")
 
 # ============================================================
 # === DATABASE ===
@@ -225,12 +226,7 @@ async def search_by_code(update: Update, context: ContextTypes.DEFAULT_TYPE):
     if not film:
         await update.message.reply_text("❌ Bunday kodli kino topilmadi.\n\n🔢 Boshqa kod kiriting:", reply_markup=search_keyboard())
         return SEARCH_CODE
-    text = (
-        f"🎬 *{film['title']}*\n"
-        f"📌 Kod: `{film['code']}`\n"
-        f"👁 Ko'rishlar: {film['views']}\n"
-        f"🎭 Janr: {film.get('genre', 'Nomalum')}"
-    )
+    text = (f"🎬 *{film['title']}*\n📌 Kod: `{film['code']}`\n👁 Ko'rishlar: {film['views']}\n🎭 Janr: {film.get('genre', 'Nomalum')}")
     db.increment_views(film['code'])
     if film.get('file_id'):
         await update.message.reply_video(film['file_id'], caption=text, parse_mode="Markdown")
@@ -250,8 +246,7 @@ async def back_to_main(update: Update, context: ContextTypes.DEFAULT_TYPE):
 async def reklama_homiylik(update: Update, context: ContextTypes.DEFAULT_TYPE):
     text = db.get_setting("homiylik") or f"Reklama va homiylik bo'yicha:\n\n👨‍💼 @{ADMIN_USERNAME} ga murojaat qiling"
     await update.message.reply_text(
-        f"💲 *Reklama va Homiylik*\n\n{text}",
-        parse_mode="Markdown",
+        f"💲 *Reklama va Homiylik*\n\n{text}", parse_mode="Markdown",
         reply_markup=InlineKeyboardMarkup([[InlineKeyboardButton("📩 Adminga yozish", url=f"https://t.me/{ADMIN_USERNAME}")]])
     )
 
@@ -262,7 +257,7 @@ async def admin_panel(update: Update, context: ContextTypes.DEFAULT_TYPE):
     if update.effective_user.id not in ADMIN_IDS:
         await update.message.reply_text("❌ Sizda ruxsat yo'q.")
         return
-    await update.message.reply_text("🔧 *Admin panel*\nQuyidagi bo'limni tanlang:", parse_mode="Markdown", reply_markup=admin_keyboard())
+    await update.message.reply_text("🔧 *Admin panel*", parse_mode="Markdown", reply_markup=admin_keyboard())
 
 async def admin_stats(update: Update, context: ContextTypes.DEFAULT_TYPE):
     if update.effective_user.id not in ADMIN_IDS:
@@ -270,14 +265,12 @@ async def admin_stats(update: Update, context: ContextTypes.DEFAULT_TYPE):
     stats = db.get_stats()
     today = db.get_today_stats()
     await update.message.reply_text(
-        f"📊 *Statistika*\n\n"
-        f"━━━━━━━━━━━━━━━\n"
+        f"📊 *Statistika*\n\n━━━━━━━━━━━━━━━\n"
         f"👥 Jami foydalanuvchilar: *{stats['users']}*\n"
         f"🆕 Bugun qo'shildi: *{today['new_users']}*\n\n"
         f"🎬 Jami filmlar: *{stats['films']}*\n"
         f"👁 Jami ko'rishlar: *{stats['total_views']}*\n"
-        f"🔥 Bugun ko'rishlar: *{today['today_views']}*\n"
-        f"━━━━━━━━━━━━━━━",
+        f"🔥 Bugun ko'rishlar: *{today['today_views']}*\n━━━━━━━━━━━━━━━",
         parse_mode="Markdown", reply_markup=admin_keyboard()
     )
 
@@ -285,34 +278,31 @@ async def admin_users(update: Update, context: ContextTypes.DEFAULT_TYPE):
     if update.effective_user.id not in ADMIN_IDS:
         return
     users = db.get_all_users()
-    text = f"👥 *Jami foydalanuvchilar: {len(users)}*\n\n"
+    text = f"👥 *Jami: {len(users)}*\n\n"
     for i, u in enumerate(users[:30], 1):
         username = f"@{u['username']}" if u['username'] else "—"
         text += f"{i}. {u['full_name']} | {username} | `{u['user_id']}`\n"
-    if len(users) > 30:
-        text += f"\n... va yana {len(users) - 30} ta"
     await update.message.reply_text(text, parse_mode="Markdown", reply_markup=admin_keyboard())
 
 async def qidirish_menu(update: Update, context: ContextTypes.DEFAULT_TYPE):
     if update.effective_user.id not in ADMIN_IDS:
         return
-    await update.message.reply_text("🔎 *Qidirish*\nNimani qidirmoqchisiz?", parse_mode="Markdown", reply_markup=qidirish_keyboard())
+    await update.message.reply_text("🔎 *Qidirish*", parse_mode="Markdown", reply_markup=qidirish_keyboard())
 
 async def search_user_start(update: Update, context: ContextTypes.DEFAULT_TYPE):
     if update.effective_user.id not in ADMIN_IDS:
         return
-    await update.message.reply_text("👤 Foydalanuvchi ID si yoki username kiriting:")
+    await update.message.reply_text("👤 ID yoki username kiriting:")
     return ADMIN_SEARCH_USER
 
 async def search_user_do(update: Update, context: ContextTypes.DEFAULT_TYPE):
-    query = update.message.text.strip().lstrip("@")
-    user = db.find_user(query)
+    user = db.find_user(update.message.text.strip().lstrip("@"))
     if not user:
-        await update.message.reply_text("❌ Foydalanuvchi topilmadi.", reply_markup=qidirish_keyboard())
+        await update.message.reply_text("❌ Topilmadi.", reply_markup=qidirish_keyboard())
     else:
         username = f"@{user['username']}" if user['username'] else "—"
         await update.message.reply_text(
-            f"👤 *Foydalanuvchi:*\n\n🆔 ID: `{user['user_id']}`\n👤 Ism: {user['full_name']}\n📛 Username: {username}\n📅 Qo'shilgan: {user.get('created_at','—')}",
+            f"👤 *Foydalanuvchi:*\n🆔 `{user['user_id']}`\n👤 {user['full_name']}\n📛 {username}",
             parse_mode="Markdown", reply_markup=qidirish_keyboard()
         )
     return ConversationHandler.END
@@ -327,11 +317,11 @@ async def search_film_do(update: Update, context: ContextTypes.DEFAULT_TYPE):
     query = update.message.text.strip()
     films = db.search_films_by_name(query) or ([db.get_film_by_code(query)] if db.get_film_by_code(query) else [])
     if not films:
-        await update.message.reply_text("❌ Film topilmadi.", reply_markup=qidirish_keyboard())
+        await update.message.reply_text("❌ Topilmadi.", reply_markup=qidirish_keyboard())
     else:
-        text = f"🎬 *Natijalar ({len(films)} ta):*\n\n"
+        text = f"🎬 *{len(films)} ta natija:*\n\n"
         for f in films:
-            text += f"🎬 {f['title']} | Kod: `{f['code']}` | 👁{f['views']}\n"
+            text += f"🎬 {f['title']} | `{f['code']}` | 👁{f['views']}\n"
         await update.message.reply_text(text, parse_mode="Markdown", reply_markup=qidirish_keyboard())
     return ConversationHandler.END
 
@@ -339,7 +329,7 @@ async def kino_boshqaruvi(update: Update, context: ContextTypes.DEFAULT_TYPE):
     if update.effective_user.id not in ADMIN_IDS:
         return
     stats = db.get_stats()
-    await update.message.reply_text(f"🎬 *Kino boshqaruvi*\n\nJami filmlar: *{stats['films']}* ta", parse_mode="Markdown", reply_markup=kino_boshqaruvi_keyboard())
+    await update.message.reply_text(f"🎬 *Kino boshqaruvi*\nJami: *{stats['films']}* ta", parse_mode="Markdown", reply_markup=kino_boshqaruvi_keyboard())
 
 async def admin_film_list(update: Update, context: ContextTypes.DEFAULT_TYPE):
     if update.effective_user.id not in ADMIN_IDS:
@@ -348,9 +338,9 @@ async def admin_film_list(update: Update, context: ContextTypes.DEFAULT_TYPE):
     if not films:
         await update.message.reply_text("📭 Filmlar yo'q.", reply_markup=kino_boshqaruvi_keyboard())
         return
-    text = f"📋 *Filmlar ro'yxati ({len(films)} ta):*\n\n"
+    text = f"📋 *{len(films)} ta film:*\n\n"
     for f in films:
-        text += f"🎬 {f['title']} | Kod: `{f['code']}` | 👁{f['views']}\n"
+        text += f"🎬 {f['title']} | `{f['code']}` | 👁{f['views']}\n"
     await update.message.reply_text(text, parse_mode="Markdown", reply_markup=kino_boshqaruvi_keyboard())
 
 async def add_film_start(update: Update, context: ContextTypes.DEFAULT_TYPE):
@@ -371,26 +361,26 @@ async def add_film_code(update: Update, context: ContextTypes.DEFAULT_TYPE):
 
 async def add_film_file(update: Update, context: ContextTypes.DEFAULT_TYPE):
     context.user_data['film_genre'] = update.message.text.strip()
-    await update.message.reply_text("📹 Film videosini yuboring (yoki /skip yozing):")
+    await update.message.reply_text("📹 Film videosini yuboring (yoki /skip):")
     return ADMIN_FILM_FILE + 1
 
 async def add_film_save(update: Update, context: ContextTypes.DEFAULT_TYPE):
     file_id = update.message.video.file_id if update.message.video else None
-    db.add_film(title=context.user_data['film_title'], code=context.user_data['film_code'], genre=context.user_data.get('film_genre',''), file_id=file_id)
+    db.add_film(title=context.user_data['film_title'], code=context.user_data['film_code'], genre=context.user_data.get('film_genre', ''), file_id=file_id)
     await update.message.reply_text(f"✅ Film qo'shildi!\n📌 {context.user_data['film_title']}\n🔢 {context.user_data['film_code']}", reply_markup=kino_boshqaruvi_keyboard())
     return ConversationHandler.END
 
 async def delete_film_start(update: Update, context: ContextTypes.DEFAULT_TYPE):
     if update.effective_user.id not in ADMIN_IDS:
         return
-    await update.message.reply_text("🗑 O'chirmoqchi bo'lgan film kodini kiriting:")
+    await update.message.reply_text("🗑 Film kodini kiriting:")
     return ADMIN_DELETE_FILM
 
 async def delete_film_do(update: Update, context: ContextTypes.DEFAULT_TYPE):
     code = update.message.text.strip()
     film = db.get_film_by_code(code)
     if not film:
-        await update.message.reply_text("❌ Film topilmadi.", reply_markup=kino_boshqaruvi_keyboard())
+        await update.message.reply_text("❌ Topilmadi.", reply_markup=kino_boshqaruvi_keyboard())
     else:
         db.delete_film(code)
         await update.message.reply_text(f"✅ '{film['title']}' o'chirildi.", reply_markup=kino_boshqaruvi_keyboard())
@@ -399,28 +389,27 @@ async def delete_film_do(update: Update, context: ContextTypes.DEFAULT_TYPE):
 async def edit_film_start(update: Update, context: ContextTypes.DEFAULT_TYPE):
     if update.effective_user.id not in ADMIN_IDS:
         return
-    await update.message.reply_text("✏️ Tahrirlash uchun film kodini kiriting:")
+    await update.message.reply_text("✏️ Film kodini kiriting:")
     return ADMIN_EDIT_FILM_CODE
 
 async def edit_film_get_code(update: Update, context: ContextTypes.DEFAULT_TYPE):
-    code = update.message.text.strip()
-    film = db.get_film_by_code(code)
+    film = db.get_film_by_code(update.message.text.strip())
     if not film:
-        await update.message.reply_text("❌ Film topilmadi.", reply_markup=kino_boshqaruvi_keyboard())
+        await update.message.reply_text("❌ Topilmadi.", reply_markup=kino_boshqaruvi_keyboard())
         return ConversationHandler.END
-    context.user_data['edit_code'] = code
+    context.user_data['edit_code'] = film['code']
     await update.message.reply_text(f"Hozirgi nomi: *{film['title']}*\n\nYangi nomini kiriting:", parse_mode="Markdown")
     return ADMIN_EDIT_FILM_TITLE
 
 async def edit_film_save(update: Update, context: ContextTypes.DEFAULT_TYPE):
     db.update_film_title(context.user_data['edit_code'], update.message.text.strip())
-    await update.message.reply_text(f"✅ Film nomi yangilandi!", reply_markup=kino_boshqaruvi_keyboard())
+    await update.message.reply_text("✅ Yangilandi!", reply_markup=kino_boshqaruvi_keyboard())
     return ConversationHandler.END
 
 async def broadcast_start(update: Update, context: ContextTypes.DEFAULT_TYPE):
     if update.effective_user.id not in ADMIN_IDS:
         return
-    await update.message.reply_text("📢 Yubormoqchi bo'lgan xabaringizni kiriting:")
+    await update.message.reply_text("📢 Xabar kiriting:")
     return ADMIN_BROADCAST
 
 async def broadcast_send(update: Update, context: ContextTypes.DEFAULT_TYPE):
@@ -438,7 +427,7 @@ async def broadcast_send(update: Update, context: ContextTypes.DEFAULT_TYPE):
 async def confirm_payment_start(update: Update, context: ContextTypes.DEFAULT_TYPE):
     if update.effective_user.id not in ADMIN_IDS:
         return
-    await update.message.reply_text("✅ Format: `/topup USER_ID SUMMA`\n\nMasalan: `/topup 123456789 25000`", parse_mode="Markdown")
+    await update.message.reply_text("✅ Format: `/topup USER_ID SUMMA`", parse_mode="Markdown")
 
 async def topup_command(update: Update, context: ContextTypes.DEFAULT_TYPE):
     if update.effective_user.id not in ADMIN_IDS:
@@ -455,7 +444,7 @@ async def set_homiylik_start(update: Update, context: ContextTypes.DEFAULT_TYPE)
     if update.effective_user.id not in ADMIN_IDS:
         return
     current = db.get_setting("homiylik") or "Yo'q"
-    await update.message.reply_text(f"🤝 Hozirgi matn:\n{current}\n\nYangi matn kiriting:")
+    await update.message.reply_text(f"Hozirgi:\n{current}\n\nYangi matn kiriting:")
     return ADMIN_HOMIYLIK
 
 async def set_homiylik_save(update: Update, context: ContextTypes.DEFAULT_TYPE):
@@ -468,7 +457,7 @@ async def cancel(update: Update, context: ContextTypes.DEFAULT_TYPE):
     return ConversationHandler.END
 
 # ============================================================
-# MAIN
+# MAIN — WEBHOOK
 # ============================================================
 def main():
     app = ApplicationBuilder().token(BOT_TOKEN).build()
@@ -476,15 +465,15 @@ def main():
     search_conv = ConversationHandler(
         entry_points=[MessageHandler(filters.Regex("^🔍 Kino izlash$"), kino_izlash)],
         states={SEARCH_CODE: [MessageHandler(filters.Regex("^🔙 Orqaga$"), back_to_main), MessageHandler(filters.TEXT & ~filters.COMMAND, search_by_code)]},
-        fallbacks=[CommandHandler("cancel", cancel), MessageHandler(filters.Regex("^🔙 Orqaga$"), back_to_main)]
+        fallbacks=[CommandHandler("cancel", cancel)]
     )
     add_film_conv = ConversationHandler(
         entry_points=[MessageHandler(filters.Regex("^➕ Film qo'shish$"), add_film_start)],
         states={
-            ADMIN_FILM_TITLE:   [MessageHandler(filters.TEXT & ~filters.COMMAND, add_film_title)],
-            ADMIN_FILM_CODE:    [MessageHandler(filters.TEXT & ~filters.COMMAND, add_film_code)],
-            ADMIN_FILM_FILE:    [MessageHandler(filters.TEXT & ~filters.COMMAND, add_film_file)],
-            ADMIN_FILM_FILE+1:  [MessageHandler(filters.VIDEO | filters.TEXT, add_film_save)],
+            ADMIN_FILM_TITLE:  [MessageHandler(filters.TEXT & ~filters.COMMAND, add_film_title)],
+            ADMIN_FILM_CODE:   [MessageHandler(filters.TEXT & ~filters.COMMAND, add_film_code)],
+            ADMIN_FILM_FILE:   [MessageHandler(filters.TEXT & ~filters.COMMAND, add_film_file)],
+            ADMIN_FILM_FILE+1: [MessageHandler(filters.VIDEO | filters.TEXT, add_film_save)],
         },
         fallbacks=[CommandHandler("cancel", cancel)]
     )
@@ -532,7 +521,6 @@ def main():
     app.add_handler(search_film_conv)
     app.add_handler(broadcast_conv)
     app.add_handler(homiylik_conv)
-
     app.add_handler(MessageHandler(filters.Regex("^💲 Reklama va Homiylik$"), reklama_homiylik))
     app.add_handler(MessageHandler(filters.Regex("^🔧 Admin panel$"), admin_panel))
     app.add_handler(MessageHandler(filters.Regex("^📊 Statistika$"), admin_stats))
@@ -544,8 +532,18 @@ def main():
     app.add_handler(MessageHandler(filters.Regex("^🔙 Asosiy menyu$"), back_to_main))
     app.add_handler(MessageHandler(filters.Regex("^🔙 Admin panel$"), admin_panel))
 
-    print("✅ Bot ishga tushdi!")
-    app.run_polling()
+    # WEBHOOK ishga tushirish
+    if WEBHOOK_URL:
+        print(f"✅ Webhook mode: {WEBHOOK_URL}")
+        app.run_webhook(
+            listen="0.0.0.0",
+            port=PORT,
+            webhook_url=f"{WEBHOOK_URL}/{BOT_TOKEN}",
+            url_path=BOT_TOKEN,
+        )
+    else:
+        print("✅ Polling mode")
+        app.run_polling()
 
 if __name__ == "__main__":
     main()
