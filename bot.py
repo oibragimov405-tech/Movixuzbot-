@@ -1,8 +1,6 @@
 import logging
 import sqlite3
 import os
-import threading
-from http.server import HTTPServer, BaseHTTPRequestHandler
 from datetime import datetime, timedelta
 from telegram import Update, ReplyKeyboardMarkup, InlineKeyboardMarkup, InlineKeyboardButton
 from telegram.ext import (
@@ -17,8 +15,8 @@ logger = logging.getLogger(__name__)
 # === SOZLAMALAR ===
 # ============================================================
 import os
-BOT_TOKEN = os.getenv("8943368470:AAFmRxJFPcYw76f352JX-HvI81Cst0qdUW4")   # @BotFather dan yangi token oling!
-ADMIN_IDS = [8360625353]               # Sizning Telegram ID ingiz (@userinfobot dan bilib oling)
+BOT_TOKEN = os.getenv("BOT_TOKEN", "YANGI_TOKEN_BU_YERGA")   # @BotFather dan yangi token oling!
+ADMIN_IDS = [123456789]               # Sizning Telegram ID ingiz (@userinfobot dan bilib oling)
 ADMIN_USERNAME = "smmgarand"
 UZCARD_NUMBER = "5614684704857034"
 UZUM_NUMBER = "9860123456789012"
@@ -545,23 +543,6 @@ def main():
     app.add_handler(MessageHandler(filters.Regex("^✅ To'lovni tasdiqlash$"), confirm_payment_start))
     app.add_handler(MessageHandler(filters.Regex("^🔙 Asosiy menyu$"), back_to_main))
     app.add_handler(MessageHandler(filters.Regex("^🔙 Admin panel$"), admin_panel))
-
-    # Fly.io uchun oddiy web server (background)
-    class Handler(BaseHTTPRequestHandler):
-        def do_GET(self):
-            self.send_response(200)
-            self.end_headers()
-            self.wfile.write(b"Bot is running!")
-        def log_message(self, format, *args):
-            pass
-
-    def run_server():
-        port = int(os.getenv("PORT", 8080))
-        server = HTTPServer(("0.0.0.0", port), Handler)
-        server.serve_forever()
-
-    t = threading.Thread(target=run_server, daemon=True)
-    t.start()
 
     print("✅ Bot ishga tushdi!")
     app.run_polling()
